@@ -1,16 +1,18 @@
 import numpy as np
 import openpyxl
+from openpyxl.styles.borders import Border, Side, BORDER_THIN
+from openpyxl.styles import PatternFill
 
 """ CONST """
 TICKRATE = 0.01
+PATH = "F://Projects//neuro//"
 
 def read_file(N = 0):
-    path = "F://Projects//neuro//"
     first_signal_opened = []
     second_signal_opened = []
     third_signal_opened = []
     values_list = None
-    with open(path + 'openedEyes.asc') as file:
+    with open(PATH + 'openedEyes.asc') as file:
         for elem in file.read().split('\n'):
             values_list = elem.split(' ')
             if len(values_list) == 3:
@@ -23,7 +25,7 @@ def read_file(N = 0):
     second_signal_closed = []
     third_signal_closed= []
     values_list = None
-    with open(path + 'closedEyes.asc') as file:
+    with open(PATH + 'closedEyes.asc') as file:
         for elem in file.read().split('\n'):
             values_list = elem.split(' ')
             if len(values_list) == 3:
@@ -56,20 +58,51 @@ def correlation(first_signal, second_signal):
 
 if __name__ == "__main__":
     wb = openpyxl.load_workbook(filename = 'F:\\Projects\\neuro\\second_neuro\\correlation.xlsx')
+    signal_name_list = ['Opened First Signal', 'Opened Second Signal', 'Opened Third Signal', 'Closed First Signal', 'Closed Second Signal', 'Closed Third Signal']
     sheet = wb['Лист1']
+    signal_list = read_file(2000)
     time = [0.1, 0.2, 0.5, 1, 2, 3]
-    count = 0
+    row_count = 0
+    item_count = 0
+    step = 0
     ticks = []
+    thin_border = Border(
+        left=Side(border_style=BORDER_THIN, color='FF0000'),
+        right=Side(border_style=BORDER_THIN, color='FF0000'),
+        top=Side(border_style=BORDER_THIN, color='FF0000'),
+        bottom=Side(border_style=BORDER_THIN, color='FF0000')
+    )
     for item in time:
         ticks.append(item/TICKRATE)
     for item in ticks:
-        signal_list = read_file(item)
-        for i in range(2, 8):
-            for j in range(2, 8):
-                if i == j:
-                    sheet.cell(row = i + count, column= j).value = '-----------------'
+        for k in range(0, len(signal_list[0]), int(item)):
+            for u in range(1, 8):
+                if (u == 1): 
+                    sheet.cell(row = 1 + row_count , column= 1 + item_count).value = f'{np.round(item/100 * step, 1)} s'
+                    sheet.cell(row = 1 + row_count , column= 1 + item_count).border = thin_border
+                    sheet.cell(row = 1 + row_count , column= 1 + item_count).fill = \
+                        PatternFill(start_color='FFEE08', end_color='FFEE08', fill_type = 'solid')
                 else:
-                    print(f'{i-1} | {j-1} | {correlation(signal_list[i-2], signal_list[j-2])}')
-                    sheet.cell(row = i + count, column = j).value = correlation(signal_list[i-2], signal_list[j-2])
-        count += 7
+                    sheet.cell(row = u + row_count, column= 1 + item_count).value = signal_name_list[u-2]
+                    sheet.cell(row = u + row_count, column= 1 + item_count).border = thin_border
+                    sheet.cell(row = u + row_count, column= 1 + item_count).fill = \
+                        PatternFill(start_color='E8E8E8', end_color='E8E8E8', fill_type = 'solid')
+            for m in range(2, 8):
+                sheet.cell(row = 1 + row_count, column= m + item_count).value = signal_name_list[m-2]
+                sheet.cell(row = 1 + row_count, column= m + item_count).border = thin_border
+                sheet.cell(row = 1 + row_count, column= m + item_count).fill = \
+                    PatternFill(start_color='E8E8E8', end_color='E8E8E8', fill_type = 'solid')
+            for i in range(2, 8):
+                for j in range(2, 8):
+                    if i == j:
+                        sheet.cell(row = i + row_count, column= j + item_count).value = '----------------------------'
+                    else:
+                        if len(signal_list[i-2][int(item * k):int(item * (k + 1))]) != 0:
+                            sheet.cell(row = i + row_count, column = j + item_count).value = \
+                            correlation(signal_list[i-2][int(item * k):int(item * (k + 1))], signal_list[j-2][int(item * k):int(item * (k + 1))])
+            item_count += 7
+            step += 1
+        row_count += 7
+        item_count = 0
+        step = 0
     wb.save('F:\\Projects\\neuro\\second_neuro\\correlation.xlsx')
